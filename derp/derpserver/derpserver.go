@@ -189,6 +189,7 @@ type Server struct {
 
 	verifyClientsURL         string
 	verifyClientsURLFailOpen bool
+	verifyClientFunc         func(key.NodePublic) bool
 
 	perClientSendQueueDepth int // Sets the client send queue depth for the server.
 	tcpWriteTimeout         time.Duration
@@ -493,6 +494,12 @@ func (s *Server) SetVerifyClient(v bool) {
 // against tailscaled).
 func (s *Server) SetVerifyClientURL(v string) {
 	s.verifyClientsURL = v
+}
+
+// SetVerifyClientFunc sets a func that must accept a client's node key
+// before it connects. It must be called before serving begins.
+func (s *Server) SetVerifyClientFunc(f func(key.NodePublic) bool) {
+	s.verifyClientFunc = f
 }
 
 // SetVerifyClientURLFailOpen sets whether to allow clients to connect if the
@@ -1584,6 +1591,10 @@ func (s *Server) verifyClient(ctx context.Context, clientKey key.NodePublic, inf
 		// further wouldn't work: it's not part of the tailnet so tailscaled and
 		// likely the admission control URL wouldn't know about it.
 		return nil
+	}
+
+	if s.verifyClientFunc != nil && !s.verifyClientFunc(clientKey) {
+		return fmt.Errorf("peer %v not authorized", clientKey)
 	}
 
 	// tailscaled-based verification:

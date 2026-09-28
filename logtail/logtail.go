@@ -646,6 +646,9 @@ func (lg *Logger) awaitInternetUp(ctx context.Context) {
 // origlen indicates the pre-compression body length.
 // origlen of -1 indicates that the body is not compressed.
 func (lg *Logger) upload(ctx context.Context, body []byte, origlen int) (retryAfter time.Duration, err error) {
+	if logtailDisabled.Load() {
+		return 0, nil
+	}
 	lg.uploadCalls.Add(1)
 	startUpload := time.Now()
 
@@ -749,6 +752,9 @@ func (lg *Logger) ExpVar() expvar.Var {
 
 // logtailDisabled is whether logtail uploads to logcatcher are disabled.
 var logtailDisabled atomic.Bool
+
+// Mainplane: logs never leave the machine.
+func init() { logtailDisabled.Store(true) }
 
 // Disable disables logtail uploads for the lifetime of the process.
 func Disable() {
