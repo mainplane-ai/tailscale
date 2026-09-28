@@ -37,15 +37,10 @@ import (
 	"tailscale.com/util/slicesx"
 )
 
-// MakeLookupFunc creates a function that can be used to resolve hostnames
-// (e.g. as a LookupIPFallback from dnscache.Resolver).
-// The netMon parameter is optional; if non-nil it's used to do faster interface lookups.
+// MakeLookupFunc returns nil, so a dnscache.Resolver gets no fallback.
+// Mainplane: never ask Tailscale's DERP servers to resolve a name.
 func MakeLookupFunc(logf logger.Logf, netMon *netmon.Monitor) func(ctx context.Context, host string) ([]netip.Addr, error) {
-	fr := &fallbackResolver{
-		logf:   logf,
-		netMon: netMon,
-	}
-	return fr.Lookup
+	return nil
 }
 
 // fallbackResolver contains the state and configuration for a DNS resolution

@@ -708,6 +708,9 @@ func (c *Direct) doLogin(ctx context.Context, opt loginOpt) (mustRegen bool, new
 		} else {
 			c.health.SetHealthy(macOSScreenTime)
 		}
+		if err == nil && VerifyServerKey != nil {
+			err = VerifyServerKey(ctx, c.serverURL, keys.PublicKey)
+		}
 		if err != nil {
 			return regen, opt.URL, nil, err
 		}
@@ -1529,6 +1532,10 @@ func encode(v any) ([]byte, error) {
 	}
 	return b, nil
 }
+
+// VerifyServerKey, if set, must accept the control server's Noise key
+// before the client speaks to it. The /key response is trusted by TLS alone.
+var VerifyServerKey func(ctx context.Context, serverURL string, k key.MachinePublic) error
 
 func loadServerPubKeys(ctx context.Context, httpc *http.Client, serverURL string) (*tailcfg.OverTLSPublicKeyResponse, error) {
 	keyURL := fmt.Sprintf("%v/key?v=%d", serverURL, tailcfg.CurrentCapabilityVersion)
