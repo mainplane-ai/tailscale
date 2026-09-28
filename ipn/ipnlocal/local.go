@@ -64,6 +64,7 @@ import (
 	"tailscale.com/net/netutil"
 	"tailscale.com/net/packet"
 	"tailscale.com/net/routemanager"
+	"tailscale.com/net/sockstats"
 	"tailscale.com/net/traffic"
 	"tailscale.com/net/tsaddr"
 	"tailscale.com/net/tsdial"
@@ -645,9 +646,13 @@ func NewLocalBackend(logf logger.Logf, logID logid.PublicID, sys *tsd.System, lo
 	}()
 
 	netMon := sys.NetMon.Get()
-	b.sockstatLogger, err = sockstatlog.NewLogger(logpolicy.LogsDir(logf), logf, logID, netMon, sys.HealthTracker.Get(), sys.Bus.Get())
-	if err != nil {
-		logf("error setting up sockstat logger: %v", err)
+	// mainplane: LogsDir makes tailscaled's state dir (/var/lib/tailscale),
+	// even when NewLogger then returns nil for want of sockstats.
+	if sockstats.IsAvailable {
+		b.sockstatLogger, err = sockstatlog.NewLogger(logpolicy.LogsDir(logf), logf, logID, netMon, sys.HealthTracker.Get(), sys.Bus.Get())
+		if err != nil {
+			logf("error setting up sockstat logger: %v", err)
+		}
 	}
 	// Enable sockstats logs only on non-mobile unstable builds
 	if version.IsUnstableBuild() && !version.IsMobile() && b.sockstatLogger != nil {
