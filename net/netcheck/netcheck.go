@@ -503,6 +503,9 @@ func makeProbePlan(dm *tailcfg.DERPMap, ifState *netmon.State, last *Report, pre
 				do6 = false
 			}
 			n := reg.Nodes[try%len(reg.Nodes)]
+			if n.STUNPort < 0 { // STUN is off: a probe would only log that it has no address
+				continue
+			}
 			prevLatency := cmp.Or(
 				last.RegionLatency[reg.RegionID]*120/100,
 				defaultActiveRetransmitTime)
@@ -539,6 +542,9 @@ func makeProbePlanInitial(dm *tailcfg.DERPMap, ifState *netmon.State) (plan prob
 		var p6 []probe
 		for try := range 3 {
 			n := reg.Nodes[try%len(reg.Nodes)]
+			if n.STUNPort < 0 { // STUN is off: a probe would only log that it has no address
+				continue
+			}
 			delay := time.Duration(try) * defaultInitialRetransmitTime
 			if n.IPv4 != "none" && ((ifState.HaveV4 && nodeMight4(n)) || n.IsTestNode()) {
 				p4 = append(p4, probe{delay: delay, node: n.Name, proto: probeIPv4})
