@@ -59,6 +59,10 @@ func RXChecksumOffload(p *packet.Parsed) *stack.PacketBuffer {
 			return nil
 		}
 		csumStart = header.IPv6FixedHeaderSize
+		// A first fragment (packet.Parsed steps over a Fragment header that
+		// is the base header's Next Header) holds part of the L4 payload, as
+		// in IPv4 above; gVisor reassembles it.
+		fragment = buf[6] == uint8(header.IPv6FragmentHeader)
 		pn = header.IPv6ProtocolNumber
 		if p.IPProto != ipproto.ICMPv6 && p.IPProto != ipproto.TCP && p.IPProto != ipproto.UDP {
 			// buf could have extension headers before a UDP or TCP header, but
