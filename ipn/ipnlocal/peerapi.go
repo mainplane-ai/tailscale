@@ -60,7 +60,10 @@ func (s *peerAPIServer) listen(ip netip.Addr, tunIfIndex int) (ln net.Listener, 
 	// But since we started intercepting it with netstack, it's not even important that
 	// we have a real kernel-level listener. So just create a dummy listener on Android
 	// and let netstack intercept it.
-	if runtime.GOOS == "android" {
+	// mainplane: a netstack node, the harness's, gets its peerapi connections
+	// from netstack too. A kernel listener would only open the port on every
+	// address of the machine, the public ones included.
+	if runtime.GOOS == "android" || s.b.sys.IsNetstack() {
 		return newFakePeerAPIListener(ip), nil
 	}
 
@@ -84,10 +87,6 @@ func (s *peerAPIServer) listen(ip netip.Addr, tunIfIndex int) (ln net.Listener, 
 		if runtime.GOOS == "darwin" || runtime.GOOS == "ios" {
 			ipStr = ""
 		}
-	}
-
-	if s.b.sys.IsNetstack() {
-		ipStr = ""
 	}
 
 	tcp4or6 := "tcp4"
